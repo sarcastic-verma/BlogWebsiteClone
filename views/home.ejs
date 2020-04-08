@@ -2,10 +2,10 @@
 <h1>Home</h1>
 <p><%= content %></p>
 <% allBlogs.forEach(function(blog){ %>
- <h2><%=blog.blogTitle%></h2>
+ <h2><%=blog.title%></h2>
 <p>
-<%=blog.blogContent.substring(0, 100) + " ..."%>
-<a href="/post/<%=blog.blogTitle%>">Read more</a
+<%=blog.content.substring(0, 100) + " ..."%>
+<a href="/post/<%=blog._id%>">Read more</a
 </p>
 <%}) %>
 

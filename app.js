@@ -3,6 +3,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const mongoose = require('mongoose');
 
 const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
 const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
@@ -10,27 +11,39 @@ const contactContent = "Scelerisque eleifend donec pretium vulputate sapien. Rho
 
 const app = express();
 const stri = require('lodash/string');
+
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({
   extended: true
 }));
 app.use(express.static("public"));
-const blogs = [];
+mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true,useUnifiedTopology: true});
+const blogsSchema = {
+  title: String,
+  content: String
+}
+const Blog = mongoose.model("Blog", blogsSchema);
 
 app.get("/", function(req, res) {
-  res.render("home", {
-    content: homeStartingContent,
-    allBlogs: blogs
+  Blog.find({},function(err,foundBlogs){
+    res.render("home", {
+      content: homeStartingContent,
+      allBlogs: foundBlogs
+    })
   })
 });
-app.get("/post/:name",function(req,res){
-  blogs.forEach(function(blog){
-  if(stri.lowerCase(req.params.name) === stri.lowerCase(blog.blogTitle)){
-    res.render("post",{blog:blog})
+app.get("/post/:blogid",function(req,res){
+  let requestedBlogId = req.params.blogid;
+  Blog.findOne({_id: requestedBlogId}, function(err, blog){
+  if(!err){
+    res.render("post", {
+      blog:blog
+    });
+  }else{
+    res.send(err);
   }
-  })
-
+ });
 });
 app.get("/about", function(req, res) {
   res.render("about", {
@@ -55,12 +68,18 @@ app.post("/", function(req, res) {
 })
 
 app.post("/compose", function(req, res) {
-  const blog = {
-    blogTitle:req.body.blogTitle,
-    blogContent:req.body.blogContent
-  };
-  blogs.push(blog);
-  res.redirect("/");
+  const blog = new Blog({
+    title:req.body.blogTitle,
+    content:req.body.blogContent
+  });
+  blog.save(function(err){
+    if(err){
+      console.log(err);
+    }
+    else{
+      res.redirect("/");
+    }
+  });
 })
 
 app.listen(3000, function() {
